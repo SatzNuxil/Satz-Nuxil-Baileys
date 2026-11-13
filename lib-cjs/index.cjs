@@ -1,22 +1,25 @@
 'use strict';
 
 let baileysPromise;
-
-const MB = import('../src/MessageBuilder/index.js');
+let messageBuilderPromise;
 
 async function loadBaileys() {
     if (!baileysPromise) {
         baileysPromise = import('../lib/index.js');
     }
 
-    const [baileys, messageBuilder] = await Promise.all([
+    if (!messageBuilderPromise) {
+        messageBuilderPromise = import('../src/MessageBuilder/index.js');
+    }
+
+    const [baileys, MB] = await Promise.all([
         baileysPromise,
-        MB
+        messageBuilderPromise
     ]);
 
     return {
         ...baileys,
-        MB: messageBuilder
+        MB
     };
 }
 
@@ -27,6 +30,5 @@ async function createSocket(...args) {
 
 module.exports = {
     loadBaileys,
-    createSocket,
-    MB
+    createSocket
 };
