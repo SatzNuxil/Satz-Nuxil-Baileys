@@ -25,7 +25,7 @@ import type {
 	WAPrivacyValue,
 	WAReadReceiptsValue
 } from '../Types'
-import { ALL_WA_PATCH_NAMES } from '../Types'
+import { ALL_WA_PATCH_NAMES, SPAM_FLOWS } from '../Types'
 import type { QuickReplyAction } from '../Types/Bussines.js'
 import type { LabelActionBody } from '../Types/Label'
 import { SyncState } from '../Types/State'
@@ -51,6 +51,7 @@ import { buildTcTokenFromJid } from '../Utils/tc-token-utils'
 import {
 	type BinaryNode,
 	getBinaryNodeChild,
+        isJidGroup,
 	getBinaryNodeChildren,
 	isHostedLidUser,
 	isHostedPnUser,
@@ -522,7 +523,78 @@ export const makeChatsSocket = (config: SocketConfig) => {
 			}
 		}
 	}
+const reportSpam = async (
+  jid: string,
+  options: {
+    flow?: string
+    source?: string
+    subject?: string
+    isKnownChat?: boolean
+  } = {}
+) => {
+  if (typeof jid !== 'string' || !jid.includes('@')) {
+    throw new Boom(`${JSON.stringify(jid)} is not a jid to report`, {
+      statusCode: 400,
+      data: { jid }
+    })
+  }
 
+  const flow = options.flow ?? SPAM_FLOWS.OverflowMenuReport
+
+  if (typeof flow !== 'string' || !flow.length) {
+    throw new Boom('spam flow must be a non-empty string, see SPAM_FLOWS', {
+      statusCode: 400,
+      data: { flow }
+    })
+  }
+
+  const attrs: Record<string, string> = {
+    jid: isJidGroup(jid) ? jid : jidNormalizedUser(jid),
+    spam_flow: flow
+  }
+
+  if (options.source) attrs.source = jidNormalizedUser(options.source)
+  if (options.subject) attrs.subject = options.subject
+
+  if (typeof options.isKnownChat === 'boolean') {
+    attrs.is_known_chat = options.isKnownChat ? 'true' : 'false'
+  }
+
+  const node: BinaryNode = {
+    tag: 'spam_list',
+    attrs
+  }
+
+  const result = await query({
+    tag: 'iq',
+    attrs: {
+      xmlns: 'spam',
+      to: S_WHATSAPP_NET,
+      type: 'set'
+    },
+    content: [node]
+  })
+
+  const error = getBinaryNodeChild(result, 'error')
+
+  if (error) {
+    throw new Boom('reportSpam was rejected by the server', {
+      statusCode: Number(error.attrs?.code) || 400,
+      data: {
+        jid: attrs.jid,
+        flow,
+        text: error.attrs?.text
+      }
+    })
+  }
+
+  return {
+    jid: attrs.jid,
+    flow,
+    reported: true,
+    node: result
+  }
+}
 	const cleanDirtyBits = async (type: 'account_sync' | 'groups', fromTimestamp?: number | string) => {
 		logger.info({ fromTimestamp }, 'clean dirty bits ' + type)
 		await sendNode({
@@ -1515,6 +1587,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		updateGroupsAddPrivacy,
 		updateDefaultDisappearingMode,
 		getBusinessProfile,
+                reportSpam,
 		resyncAppState,
 		chatModify,
 		cleanDirtyBits,
