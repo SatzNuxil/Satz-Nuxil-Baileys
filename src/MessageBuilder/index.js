@@ -37,6 +37,9 @@ import sharp from 'sharp';
 import ffmpeg from 'fluent-ffmpeg';
 import { PassThrough, Readable } from 'stream';
 
+
+
+
 function extractIE(text, { extract = true, hyperlink = true, citation = true, latex = true } = {}) {
 	if (!extract) {
 		return {
@@ -990,6 +993,32 @@ class Carousel extends BaseBuilder {
 	}
 }
 
+function htmlSection(html) {
+    if (typeof html !== 'string') {
+        throw new TypeError('HTML must be a string');
+    }
+
+    return AIRich.newLayout('Single', {
+        html,
+        __typename: 'GenAIHTMLSectionPrimitive',
+    });
+}
+
+function embeddedTab({ id, tabHeader, sections = [] }) {
+    return {
+        id,
+        tabHeader,
+        sections,
+    };
+}
+
+function embeddedScreen({ title, tabs = [] }) {
+    return {
+        title,
+        tabs,
+    };
+}
+
 class AIRich extends BaseBuilder {
 	#client;
 
@@ -1033,6 +1062,23 @@ class AIRich extends BaseBuilder {
 
 		return this;
 	}
+        
+addEmbeddedScreen(screen) {
+    if (!screen || typeof screen !== 'object') {
+        throw new TypeError('Embedded screen must be an object');
+    }
+
+    if (!Array.isArray(screen.tabs)) {
+        throw new TypeError('Embedded screen tabs must be an array');
+    }
+
+    return this.addSection(
+        AIRich.newLayout('Single', {
+            ...screen,
+            __typename: 'GenAIEmbeddedScreenPrimitive',
+        })
+    );
+}
 
          htmlSection(html) {
     if (typeof html !== 'string') {
@@ -2284,4 +2330,14 @@ textSection(text) {
 	}
 }
 
-export { VERSION, Button, ButtonV2, Carousel, AIRich, Toolkit };
+export {
+    VERSION,
+    Button,
+    ButtonV2,
+    Carousel,
+    AIRich,
+    Toolkit,
+    htmlSection,
+    embeddedTab,
+    embeddedScreen,
+};
