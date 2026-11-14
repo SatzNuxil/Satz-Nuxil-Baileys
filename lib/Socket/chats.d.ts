@@ -61,6 +61,17 @@ export declare const makeChatsSocket: (config: SocketConfig) => {
     updateGroupsAddPrivacy: (value: WAPrivacyGroupAddValue) => Promise<void>;
     updateDefaultDisappearingMode: (duration: number) => Promise<void>;
     getBusinessProfile: (jid: string) => Promise<WABusinessProfile | void>;
+    reportSpam: (jid: string, options?: {
+        flow?: string;
+        source?: string;
+        subject?: string;
+        isKnownChat?: boolean;
+    }) => Promise<{
+        jid: string | undefined;
+        flow: string;
+        reported: boolean;
+        node: any;
+    }>;
     resyncAppState: (collections: readonly ("critical_unblock_low" | "regular_high" | "regular_low" | "critical_block" | "regular")[], isInitialSync: boolean) => Promise<void>;
     chatModify: (mod: ChatModification, jid: string) => Promise<void>;
     cleanDirtyBits: (type: "account_sync" | "groups", fromTimestamp?: number | string) => Promise<void>;

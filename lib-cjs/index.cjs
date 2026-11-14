@@ -85026,6 +85026,7 @@ __export(cjs_entry_exports, {
   RetryReason: () => RetryReason,
   SERVER_ERROR_CODES: () => SERVER_ERROR_CODES,
   SERVER_JID: () => SERVER_JID,
+  SPAM_FLOWS: () => SPAM_FLOWS,
   STATUS_EXPIRY_SECONDS: () => STATUS_EXPIRY_SECONDS,
   STORIES_JID: () => STORIES_JID,
   S_WHATSAPP_NET: () => S_WHATSAPP_NET,
@@ -233281,6 +233282,23 @@ var ALL_WA_PATCH_NAMES = [
   "regular_low",
   "regular"
 ];
+var SPAM_FLOWS = Object.freeze({
+  Block: "block_dialog",
+  OverflowMenuBlock: "overflow_menu_block",
+  OverflowMenuReport: "overflow_menu_report",
+  MediaViewer: "media_viewer",
+  MessageMenu: "message_menu",
+  CommunityHome: "community_home",
+  AccountInfoReport: "account_info_report",
+  GroupInfoReport: "group_info_report",
+  GroupSpamBannerReport: "group_spam_banner_report",
+  OneToOneChatSpamBannerReport: "1_1_spam_banner_report",
+  BizSpamBannerBlock: "biz_spam_banner_block",
+  ChatListBlock: "chat_list_block",
+  NotificationBlock: "notification_block",
+  StatusPostReport: "status_post_report",
+  NewsletterInfoReport: "newsletter_info_report"
+});
 
 // lib/Types/State.js
 var import_boom = __toESM(require_lib3(), 1);
@@ -249597,6 +249615,62 @@ var makeChatsSocket = (config) => {
       };
     }
   };
+  const reportSpam = async (jid, options = {}) => {
+    if (typeof jid !== "string" || !jid.includes("@")) {
+      throw new import_boom15.Boom(`${JSON.stringify(jid)} is not a jid to report`, {
+        statusCode: 400,
+        data: { jid }
+      });
+    }
+    const flow = options.flow ?? SPAM_FLOWS.OverflowMenuReport;
+    if (typeof flow !== "string" || !flow.length) {
+      throw new import_boom15.Boom("spam flow must be a non-empty string, see SPAM_FLOWS", {
+        statusCode: 400,
+        data: { flow }
+      });
+    }
+    const attrs = {
+      jid: isJidGroup(jid) ? jid : jidNormalizedUser(jid),
+      spam_flow: flow
+    };
+    if (options.source)
+      attrs.source = jidNormalizedUser(options.source);
+    if (options.subject)
+      attrs.subject = options.subject;
+    if (typeof options.isKnownChat === "boolean") {
+      attrs.is_known_chat = options.isKnownChat ? "true" : "false";
+    }
+    const node = {
+      tag: "spam_list",
+      attrs
+    };
+    const result = await query({
+      tag: "iq",
+      attrs: {
+        xmlns: "spam",
+        to: S_WHATSAPP_NET,
+        type: "set"
+      },
+      content: [node]
+    });
+    const error = getBinaryNodeChild(result, "error");
+    if (error) {
+      throw new import_boom15.Boom("reportSpam was rejected by the server", {
+        statusCode: Number(error.attrs?.code) || 400,
+        data: {
+          jid: attrs.jid,
+          flow,
+          text: error.attrs?.text
+        }
+      });
+    }
+    return {
+      jid: attrs.jid,
+      flow,
+      reported: true,
+      node: result
+    };
+  };
   const cleanDirtyBits = async (type, fromTimestamp) => {
     logger.info({ fromTimestamp }, "clean dirty bits " + type);
     await sendNode({
@@ -250284,6 +250358,7 @@ var makeChatsSocket = (config) => {
     updateGroupsAddPrivacy,
     updateDefaultDisappearingMode,
     getBusinessProfile,
+    reportSpam,
     resyncAppState,
     chatModify,
     cleanDirtyBits,
@@ -279163,6 +279238,7 @@ var AIRich = class _AIRich extends BaseBuilder {
   RetryReason,
   SERVER_ERROR_CODES,
   SERVER_JID,
+  SPAM_FLOWS,
   STATUS_EXPIRY_SECONDS,
   STORIES_JID,
   S_WHATSAPP_NET,
