@@ -1,7 +1,7 @@
 Satz-Nuxil-Baileys
 
 <p align="center">
-  <img src="assets/banner.png" width="100%" alt="Satz-Nuxil-Baileys Banner">
+  <img src="https://d.uguu.se/NRukpeXcrzEZ.jpg" width="100%" alt="Satz-Nuxil-Baileys Banner">
 </p><p align="center">
   <b>A Powerful WhatsApp Web API for Node.js</b><br>
   Flexible • Extended • Developer Friendly
