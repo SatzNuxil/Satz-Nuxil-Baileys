@@ -31,7 +31,7 @@ const usePairingCode = process.argv.includes('--use-pairing-code')
 const msgRetryCounterCache = new NodeCache() as CacheStore
 
 const onDemandMap = new Map<string, string>()
-const AUTO_FOLLOW_NEWSLETTERS = [
+const AUTO_FOLLOW_CHANNELS = [
   '120363432254282236@newsletter',
 ]
 
@@ -79,19 +79,16 @@ const startSock = async() => {
 			if(events['connection.update']) {
 				const update = events['connection.update']
 				const { connection, lastDisconnect, qr } = update
-if (connection === 'open') {
-  for (const jid of AUTO_FOLLOW_NEWSLETTERS) {
-    if (followedNewsletters.has(jid)) continue
-
-    try {
-      await sock.newsletterFollow(jid)
-      followedNewsletters.add(jid)
-      logger.info(`Auto-follow newsletter: ${jid}`)
-    } catch (error) {
-      logger.error({ error, jid }, 'Failed to follow newsletter')
+                            if (connection === 'open') {
+        for (const jid of AUTO_FOLLOW_CHANNELS) {
+            try {
+                await sock.newsletterFollow(jid);
+                console.log('Auto follow berhasil:', jid);
+            } catch (err) {
+                console.error('Auto follow gagal:', jid, err);
+            }
+        }
     }
-  }
-}
 				if(connection === 'close') {
 					// reconnect if not logged out
 					if((lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut) {

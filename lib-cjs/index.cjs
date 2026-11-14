@@ -1669,12 +1669,12 @@ var require_lib = __commonJS({
       }
       o[0] += c2 - 1 + 37 * (c2 - 1);
     }
-    function sel25519(p, q, b) {
+    function sel25519(p, q2, b) {
       var t, c2 = ~(b - 1);
       for (var i = 0; i < 16; i++) {
-        t = c2 & (p[i] ^ q[i]);
+        t = c2 & (p[i] ^ q2[i]);
         p[i] ^= t;
-        q[i] ^= t;
+        q2[i] ^= t;
       }
     }
     function pack25519(o, n2) {
@@ -2161,7 +2161,7 @@ var require_lib = __commonJS({
       for (a = 0; a < 16; a++)
         o[a] = c2[a];
     }
-    function crypto_scalarmult(q, n2, p) {
+    function crypto_scalarmult(q2, n2, p) {
       var z = new Uint8Array(32);
       var x2 = new Float64Array(80), r, i;
       var a = gf(), b = gf(), c2 = gf(), d = gf(), e = gf(), f = gf();
@@ -2210,11 +2210,11 @@ var require_lib = __commonJS({
       var x16 = x2.subarray(16);
       inv25519(x32, x32);
       M(x16, x16, x32);
-      pack25519(q, x16);
+      pack25519(q2, x16);
       return 0;
     }
-    function crypto_scalarmult_base(q, n2) {
-      return crypto_scalarmult(q, n2, _9);
+    function crypto_scalarmult_base(q2, n2) {
+      return crypto_scalarmult(q2, n2, _9);
     }
     var K = [
       1116352408,
@@ -2706,17 +2706,17 @@ var require_lib = __commonJS({
         ts64(out, 8 * i, hh[i], hl[i]);
       return 0;
     }
-    function add3(p, q) {
+    function add3(p, q2) {
       var a = gf(), b = gf(), c2 = gf(), d = gf(), e = gf(), f = gf(), g = gf(), h = gf(), t = gf();
       Z(a, p[1], p[0]);
-      Z(t, q[1], q[0]);
+      Z(t, q2[1], q2[0]);
       M(a, a, t);
       A(b, p[0], p[1]);
-      A(t, q[0], q[1]);
+      A(t, q2[0], q2[1]);
       M(b, b, t);
-      M(c2, p[3], q[3]);
+      M(c2, p[3], q2[3]);
       M(c2, c2, D2);
-      M(d, p[2], q[2]);
+      M(d, p[2], q2[2]);
       A(d, d, d);
       Z(e, b, a);
       Z(f, d, c2);
@@ -2727,10 +2727,10 @@ var require_lib = __commonJS({
       M(p[2], g, f);
       M(p[3], e, h);
     }
-    function cswap(p, q, b) {
+    function cswap(p, q2, b) {
       var i;
       for (i = 0; i < 4; i++) {
-        sel25519(p[i], q[i], b);
+        sel25519(p[i], q2[i], b);
       }
     }
     function pack(r, p) {
@@ -2741,7 +2741,7 @@ var require_lib = __commonJS({
       pack25519(r, ty);
       r[31] ^= par25519(tx) << 7;
     }
-    function scalarmult(p, q, s) {
+    function scalarmult(p, q2, s) {
       var b, i;
       set25519(p[0], gf0);
       set25519(p[1], gf1);
@@ -2749,19 +2749,19 @@ var require_lib = __commonJS({
       set25519(p[3], gf0);
       for (i = 255; i >= 0; --i) {
         b = s[i / 8 | 0] >> (i & 7) & 1;
-        cswap(p, q, b);
-        add3(q, p);
+        cswap(p, q2, b);
+        add3(q2, p);
         add3(p, p);
-        cswap(p, q, b);
+        cswap(p, q2, b);
       }
     }
     function scalarbase(p, s) {
-      var q = [gf(), gf(), gf(), gf()];
-      set25519(q[0], X);
-      set25519(q[1], Y2);
-      set25519(q[2], gf1);
-      M(q[3], X, Y2);
-      scalarmult(p, q, s);
+      var q2 = [gf(), gf(), gf(), gf()];
+      set25519(q2[0], X);
+      set25519(q2[1], Y2);
+      set25519(q2[2], gf1);
+      M(q2[3], X, Y2);
+      scalarmult(p, q2, s);
     }
     var L = new Float64Array([
       237,
@@ -2947,11 +2947,11 @@ var require_lib = __commonJS({
     function crypto_sign_open(m, sm, n2, pk) {
       var i, mlen;
       var t = new Uint8Array(32), h = new Uint8Array(64);
-      var p = [gf(), gf(), gf(), gf()], q = [gf(), gf(), gf(), gf()];
+      var p = [gf(), gf(), gf(), gf()], q2 = [gf(), gf(), gf(), gf()];
       mlen = -1;
       if (n2 < 64)
         return -1;
-      if (unpackneg(q, pk))
+      if (unpackneg(q2, pk))
         return -1;
       for (i = 0; i < n2; i++)
         m[i] = sm[i];
@@ -2959,9 +2959,9 @@ var require_lib = __commonJS({
         m[i + 32] = pk[i];
       crypto_hash(h, m, n2);
       reduce(h);
-      scalarmult(p, q, h);
-      scalarbase(q, sm.subarray(32));
-      add3(p, q);
+      scalarmult(p, q2, h);
+      scalarbase(q2, sm.subarray(32));
+      add3(p, q2);
       pack(t, p);
       n2 -= 64;
       if (crypto_verify_32(sm, 0, t, 0)) {
@@ -7964,22 +7964,22 @@ function hslToRgb(h, s, l2) {
   h = bound01(h, 360);
   s = bound01(s, 100);
   l2 = bound01(l2, 100);
-  function hue2rgb(p2, q2, t) {
+  function hue2rgb(p2, q3, t) {
     if (t < 0) t += 1;
     if (t > 1) t -= 1;
-    if (t < 1 / 6) return p2 + (q2 - p2) * 6 * t;
-    if (t < 1 / 2) return q2;
-    if (t < 2 / 3) return p2 + (q2 - p2) * (2 / 3 - t) * 6;
+    if (t < 1 / 6) return p2 + (q3 - p2) * 6 * t;
+    if (t < 1 / 2) return q3;
+    if (t < 2 / 3) return p2 + (q3 - p2) * (2 / 3 - t) * 6;
     return p2;
   }
   if (s === 0) {
     r = g = b = l2;
   } else {
-    var q = l2 < 0.5 ? l2 * (1 + s) : l2 + s - l2 * s;
-    var p = 2 * l2 - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
+    var q2 = l2 < 0.5 ? l2 * (1 + s) : l2 + s - l2 * s;
+    var p = 2 * l2 - q2;
+    r = hue2rgb(p, q2, h + 1 / 3);
+    g = hue2rgb(p, q2, h);
+    b = hue2rgb(p, q2, h - 1 / 3);
   }
   return {
     r: r * 255,
@@ -8021,7 +8021,7 @@ function hsvToRgb(h, s, v) {
   h = bound01(h, 360) * 6;
   s = bound01(s, 100);
   v = bound01(v, 100);
-  var i = Math.floor(h), f = h - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s), mod = i % 6, r = [v, q, p, p, t, v][mod], g = [t, v, v, q, p, p][mod], b = [p, p, t, v, v, q][mod];
+  var i = Math.floor(h), f = h - i, p = v * (1 - s), q2 = v * (1 - f * s), t = v * (1 - (1 - f) * s), mod = i % 6, r = [v, q2, p, p, t, v][mod], g = [t, v, v, q2, p, p][mod], b = [p, p, t, v, v, q2][mod];
   return {
     r: r * 255,
     g: g * 255,
@@ -14555,7 +14555,7 @@ var require_decoder = __commonJS({
         while (length > 0 && !codeLengths[length - 1])
           length--;
         code.push({ children: [], index: 0 });
-        var p = code[0], q;
+        var p = code[0], q2;
         for (i = 0; i < length; i++) {
           for (j = 0; j < codeLengths[i]; j++) {
             p = code.pop();
@@ -14568,16 +14568,16 @@ var require_decoder = __commonJS({
             p.index++;
             code.push(p);
             while (code.length <= i) {
-              code.push(q = { children: [], index: 0 });
-              p.children[p.index] = q.children;
-              p = q;
+              code.push(q2 = { children: [], index: 0 });
+              p.children[p.index] = q2.children;
+              p = q2;
             }
             k++;
           }
           if (i + 1 < length) {
-            code.push(q = { children: [], index: 0 });
-            p.children[p.index] = q.children;
-            p = q;
+            code.push(q2 = { children: [], index: 0 });
+            p.children[p.index] = q2.children;
+            p = q2;
           }
         }
         return code[0].children;
@@ -19583,10 +19583,10 @@ var require_strings = __commonJS({
       STR_APPLY_UIA_OK = false;
     }
     var _utf8len = new utils2.Buf8(256);
-    for (q = 0; q < 256; q++) {
-      _utf8len[q] = q >= 252 ? 6 : q >= 248 ? 5 : q >= 240 ? 4 : q >= 224 ? 3 : q >= 192 ? 2 : 1;
+    for (q2 = 0; q2 < 256; q2++) {
+      _utf8len[q2] = q2 >= 252 ? 6 : q2 >= 248 ? 5 : q2 >= 240 ? 4 : q2 >= 224 ? 3 : q2 >= 192 ? 2 : 1;
     }
-    var q;
+    var q2;
     _utf8len[254] = _utf8len[254] = 1;
     exports2.string2buf = function(str) {
       var buf, c2, c22, m_pos, i, str_len = str.length, buf_len = 0;
@@ -20494,8 +20494,8 @@ var require_inflate = __commonJS({
     var ENOUGH_DISTS = 592;
     var MAX_WBITS = 15;
     var DEF_WBITS = MAX_WBITS;
-    function zswap32(q) {
-      return (q >>> 24 & 255) + (q >>> 8 & 65280) + ((q & 65280) << 8) + ((q & 255) << 24);
+    function zswap32(q2) {
+      return (q2 >>> 24 & 255) + (q2 >>> 8 & 65280) + ((q2 & 65280) << 8) + ((q2 & 255) << 24);
     }
     function InflateState() {
       this.mode = 0;
@@ -21998,7 +21998,7 @@ var require_UTIF = __commonJS({
             }
             function a7(Q, h, f, G, n2, E, a, C, F, d) {
               if (d == null) d = false;
-              var T = f.m, U = f.Z, z = h, J = 0, V = 0, r = 0, D = 0, a8, q = 0, X, O, _, N, e, K, x2 = 0, k, g, R, c2;
+              var T = f.m, U = f.Z, z = h, J = 0, V = 0, r = 0, D = 0, a8, q2 = 0, X, O, _, N, e, K, x2 = 0, k, g, R, c2;
               function Y2() {
                 if (V > 0) {
                   V--;
@@ -22017,7 +22017,7 @@ var require_UTIF = __commonJS({
                       }
                     } else if (I === 217) {
                       if (d) {
-                        var M = q * 8;
+                        var M = q2 * 8;
                         if (M > 0 && M < f.s / 10) {
                           throw new DNLMarkerError("Found EOI marker (0xFFD9) while parsing scan data, possibly caused by incorrect `scanLines` parameter", M);
                         }
@@ -22169,13 +22169,13 @@ var require_UTIF = __commonJS({
               }
               function H(X2, I, x3, l2, M) {
                 var S = x3 / T | 0, i = x3 % T;
-                q = S * X2.A + l2;
-                var A = i * X2.h + M, o = a2(X2, q, A);
+                q2 = S * X2.A + l2;
+                var A = i * X2.h + M, o = a2(X2, q2, A);
                 I(X2, o);
               }
               function w(X2, I, x3) {
-                q = x3 / X2.P | 0;
-                var l2 = x3 % X2.P, M = a2(X2, q, l2);
+                q2 = x3 / X2.P | 0;
+                var l2 = x3 % X2.P, M = a2(X2, q2, l2);
                 I(X2, M);
               }
               var y2 = G.length;
@@ -22566,7 +22566,7 @@ var require_UTIF = __commonJS({
                     F.G = V === 65473;
                     F.Z = V === 65474;
                     F.precision = Q[E++];
-                    var D = Z(Q, E), a4, q = 0, H = 0;
+                    var D = Z(Q, E), a4, q2 = 0, H = 0;
                     E += 2;
                     F.s = f || D;
                     F.o = Z(Q, E);
@@ -22577,8 +22577,8 @@ var require_UTIF = __commonJS({
                     for (Y2 = 0; Y2 < a8; Y2++) {
                       a4 = Q[E];
                       var w = Q[E + 1] >> 4, y2 = Q[E + 1] & 15;
-                      if (q < w) {
-                        q = w;
+                      if (q2 < w) {
+                        q2 = w;
                       }
                       if (H < y2) {
                         H = y2;
@@ -22588,7 +22588,7 @@ var require_UTIF = __commonJS({
                       F._[a4] = m - 1;
                       E += 3;
                     }
-                    F.X = q;
+                    F.X = q2;
                     F.B = H;
                     n2(F);
                     break;
@@ -23224,7 +23224,7 @@ var require_UTIF = __commonJS({
             E[h] = A(A(5 * t[g] + 4 * t[g - n2] - t[g - n2 - n2] + 4, 3) + t[L], 1);
             E[h + n2] = A(A(11 * t[g] - 4 * t[g - n2] + t[g - n2 - n2] + 4, 3) - t[L], 1);
           }
-          function q(t) {
+          function q2(t) {
             t = t < 0 ? 0 : t > 4095 ? 4095 : t;
             t = k[t] >>> 2;
             return t;
@@ -23340,15 +23340,15 @@ var require_UTIF = __commonJS({
                     for (var b = 0; b < X; b += 2) for (var G = 0; G < u; G += 2) {
                       var U = b * u + G, c2 = (b >>> 1) * (u >>> 1) + (G >>> 1), z = a8[c2], ao = ab[c2] - 2048, ak = aq[c2] - 2048, ad = as[c2] - 2048, aj = (ao << 1) + z, a0 = (ak << 1) + z, aH = z + ad, am = z - ad;
                       if (a5) {
-                        L[U] = q(aH);
-                        L[U + 1] = q(a0);
-                        L[U + u] = q(aj);
-                        L[U + u + 1] = q(am);
+                        L[U] = q2(aH);
+                        L[U + 1] = q2(a0);
+                        L[U + u] = q2(aj);
+                        L[U + u + 1] = q2(am);
                       } else {
-                        L[U] = q(aj);
-                        L[U + 1] = q(aH);
-                        L[U + u] = q(am);
-                        L[U + u + 1] = q(a0);
+                        L[U] = q2(aj);
+                        L[U + 1] = q2(aH);
+                        L[U + u] = q2(am);
+                        L[U + u + 1] = q2(a0);
                       }
                     }
                   }
@@ -24297,17 +24297,17 @@ var require_UTIF = __commonJS({
             h[j + 3] = h[a + 3];
             K++;
             if (K + 1 == 1 << V && V != 12) V++;
-          }, T = function(S, A, j, a, n2, q) {
+          }, T = function(S, A, j, a, n2, q2) {
             e = A << 3;
             U = S;
             Z = a;
             u = n2;
             var B = A + j << 3, _ = 0, t = 0;
-            m(q);
-            i(q);
+            m(q2);
+            i(q2);
             while (e < B && (_ = O()) != N) {
               if (_ == g) {
-                i(q);
+                i(q2);
                 _ = O();
                 if (_ == N) break;
                 D(_);
@@ -25128,16 +25128,16 @@ var require_UTIF = __commonJS({
                 var n2 = $.slice(0);
                 for (var K = 0; K < s; K++) {
                   if (D == 2) for (var S = 0; S < _; S++) {
-                    var q = (K * _ + S) * E, k = ((K >>> 1) * B + (S >>> 1)) * Z, y2 = (K & 1) * 2 + (S & 1);
-                    $[q] = n2[k + y2];
-                    $[q + 1] = n2[k + 4];
-                    $[q + 2] = n2[k + 5];
+                    var q2 = (K * _ + S) * E, k = ((K >>> 1) * B + (S >>> 1)) * Z, y2 = (K & 1) * 2 + (S & 1);
+                    $[q2] = n2[k + y2];
+                    $[q2 + 1] = n2[k + 4];
+                    $[q2 + 2] = n2[k + 5];
                   }
                   else for (var S = 0; S < _; S++) {
-                    var q = (K * _ + S) * E, k = (K * B + (S >>> 1)) * Z, y2 = S & 1;
-                    $[q] = n2[k + y2];
-                    $[q + 1] = n2[k + 2];
-                    $[q + 2] = n2[k + 3];
+                    var q2 = (K * _ + S) * E, k = (K * B + (S >>> 1)) * Z, y2 = S & 1;
+                    $[q2] = n2[k + y2];
+                    $[q2 + 1] = n2[k + 2];
+                    $[q2 + 2] = n2[k + 3];
                   }
                 }
               } else {
@@ -25182,7 +25182,7 @@ var require_UTIF = __commonJS({
           return C;
         })();
         (function() {
-          var G = 0, F = 1, i = 2, b = 3, J = 4, N = 5, E = 6, s = 7, c2 = 8, T = 9, a3 = 10, f = 11, q = 12, M = 13, m = 14, x2 = 15, L = 16, $ = 17, p = 18;
+          var G = 0, F = 1, i = 2, b = 3, J = 4, N = 5, E = 6, s = 7, c2 = 8, T = 9, a3 = 10, f = 11, q2 = 12, M = 13, m = 14, x2 = 15, L = 16, $ = 17, p = 18;
           function a5(t) {
             var Z = UTIF2._binBE.readUshort, u = { b: Z(t, 0), i: t[2], C: t[3], u: t[4], q: Z(t, 5), k: Z(t, 7), e: Z(t, 9), l: Z(t, 11), s: t[13], d: Z(t, 14) };
             if (u.b != 18771 || u.i > 1 || u.q < 6 || u.q % 6 || u.e < 768 || u.e % 24 || u.l != 768 || u.k < u.l || u.k % u.l || u.k - u.e >= u.l || u.s > 16 || u.s != u.k / u.l || u.s != Math.ceil(u.e / u.l) || u.d != u.q / 6 || u.u != 12 && u.u != 14 && u.u != 16 || u.C != 16 && u.C != 0) {
@@ -25327,7 +25327,7 @@ var require_UTIF = __commonJS({
             }
           }
           function B(t) {
-            U(t, s, q);
+            U(t, s, q2);
             U(t, i, J);
             U(t, x2, $);
           }
@@ -25353,7 +25353,7 @@ var require_UTIF = __commonJS({
             _(t, Z, u, e, b, T, Q, V, 2, 1, 0, 3, 0);
             _(t, Z, u, e, a3, L, Q, V, 0, 0, 0, 3, 2);
             _(t, Z, u, e, J, f, Q, V, 1, 0, 0, 3, 2);
-            _(t, Z, u, e, q, $, Q, V, 2, 1, 0, 3, 0);
+            _(t, Z, u, e, q2, $, Q, V, 2, 1, 0, 3, 0);
           }
           function a9(t, Z, u, e, Q, V) {
             var O = V.length, o = t.l;
@@ -25380,7 +25380,7 @@ var require_UTIF = __commonJS({
             if (Z == null) {
               Z = u.h ? [[1, 1, 0, 1, 1, 2], [1, 1, 2, 1, 1, 0], [2, 0, 1, 0, 2, 1], [1, 1, 2, 1, 1, 0], [1, 1, 0, 1, 1, 2], [0, 2, 1, 2, 0, 1]] : [[0, 1], [3, 2]];
             }
-            var O = [[G, b], [F, J], [N, f], [E, q], [M, L], [m, $]], o = [];
+            var O = [[G, b], [F, J], [N, f], [E, q2], [M, L], [m, $]], o = [];
             for (var X = 0; X < p; X++) {
               o[X] = new Uint16Array(u.A);
             }
@@ -50158,8 +50158,8 @@ var require_pixelmatch = __commonJS({
       const y3 = y1 - y2;
       if (yOnly) return y3;
       const i = rgb2i(r1, g1, b1) - rgb2i(r2, g2, b2);
-      const q = rgb2q(r1, g1, b1) - rgb2q(r2, g2, b2);
-      const delta = 0.5053 * y3 * y3 + 0.299 * i * i + 0.1957 * q * q;
+      const q2 = rgb2q(r1, g1, b1) - rgb2q(r2, g2, b2);
+      const delta = 0.5053 * y3 * y3 + 0.299 * i * i + 0.1957 * q2 * q2;
       return y1 > y2 ? -delta : delta;
     }
     function rgb2y(r, g, b) {
@@ -277810,7 +277810,8 @@ var Button = class extends BaseBuilder {
         display_text,
         id,
         ...options
-      })
+      }),
+      q
     });
     return this;
   }
@@ -278121,6 +278122,24 @@ var AIRich = class _AIRich extends BaseBuilder {
       this._sections.push(item);
     }
     return this;
+  }
+  htmlSection(html) {
+    if (typeof html !== "string") {
+      throw new TypeError("HTML must be a string");
+    }
+    this._sections.push(
+      _AIRich.newLayout("Single", {
+        html,
+        __typename: "GenAIHTMLSectionPrimitive"
+      })
+    );
+    return this;
+  }
+  textSection(text) {
+    if (typeof text !== "string") {
+      throw new TypeError("Text must be a string");
+    }
+    return this.addText(text);
   }
   addText(text, { hyperlink = true, citation = true, latex = true } = {}) {
     if (typeof text != "string") {
@@ -279062,12 +279081,12 @@ var AIRich = class _AIRich extends BaseBuilder {
       }
       if (c2 === '"' || c2 === "'" || c2 === "`") {
         let s = i;
-        const q = c2;
+        const q2 = c2;
         i++;
         while (i < code.length) {
           if (code[i] === "\\" && i + 1 < code.length) {
             i += 2;
-          } else if (code[i] === q) {
+          } else if (code[i] === q2) {
             i++;
             break;
           } else {

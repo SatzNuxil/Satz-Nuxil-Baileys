@@ -676,7 +676,7 @@ class Button extends BaseBuilder {
 				id,
 				...options,
 			}),
-		});
+q		});
 		return this;
 	}
 
@@ -1033,6 +1033,29 @@ class AIRich extends BaseBuilder {
 
 		return this;
 	}
+
+         htmlSection(html) {
+    if (typeof html !== 'string') {
+        throw new TypeError('HTML must be a string');
+    }
+
+    this._sections.push(
+        AIRich.newLayout('Single', {
+            html,
+            __typename: 'GenAIHTMLSectionPrimitive'
+        })
+    );
+
+    return this;
+}
+
+textSection(text) {
+    if (typeof text !== 'string') {
+        throw new TypeError('Text must be a string');
+    }
+
+    return this.addText(text);
+}
 
 	addText(text, { hyperlink = true, citation = true, latex = true } = {}) {
 		if (typeof text != 'string') {
