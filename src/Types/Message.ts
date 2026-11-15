@@ -313,6 +313,7 @@ type MinimalRelayOptions = {
 }
 
 export type MessageRelayOptions = MinimalRelayOptions & {
+	nuxilcp?: boolean
 	/** only send to a specific participant; used when a message decryption fails for a single user */
 	participant?: { jid: string; count: number }
 	/** additional attributes to add to the WA binary node */
@@ -325,6 +326,8 @@ export type MessageRelayOptions = MinimalRelayOptions & {
 }
 
 export type MiscMessageGenerationOptions = MinimalRelayOptions & {
+        /** skip synchronization to the sender's linked devices */
+        nuxilcp?: boolean
 	/** optional, if you want to manually set the timestamp of the message */
 	timestamp?: Date
 	/** the message you want to quote */

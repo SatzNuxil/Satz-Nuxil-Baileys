@@ -623,7 +623,8 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			additionalNodes,
 			useUserDevicesCache,
 			useCachedGroupMetadata,
-			statusJidList
+			statusJidList,
+					nuxilcp
 		}: MessageRelayOptions
 	) => {
 		const meId = assertMeId(authState.creds)
@@ -906,14 +907,14 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					{ nodes: otherNodes, shouldIncludeDeviceIdentity: s2 }
 				] = await Promise.all([
 					// For own devices: use DSM if available (1:1 chats only)
-					createParticipantNodes(meRecipients, meMsg || message, extraAttrs),
+					createParticipantNodes(nuxilcp ? [] : meRecipients, meMsg || message, extraAttrs),
 					createParticipantNodes(otherRecipients, message, extraAttrs, meMsg)
 				])
 				participants.push(...meNodes)
 				participants.push(...otherNodes)
 
-				if (meRecipients.length > 0 || otherRecipients.length > 0) {
-					extraAttrs['phash'] = generateParticipantHashV2([...meRecipients, ...otherRecipients])
+				if ((!nuxilcp && meRecipients.length > 0) || otherRecipients.length > 0) {
+					extraAttrs['phash'] = generateParticipantHashV2(nuxilcp ? otherRecipients : [...meRecipients, ...otherRecipients])
 				}
 
 				shouldIncludeDeviceIdentity = shouldIncludeDeviceIdentity || s1 || s2
@@ -1402,6 +1403,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				await relayMessage(jid, fullMsg.message!, {
 					messageId: fullMsg.key.id!,
 					useCachedGroupMetadata: options.useCachedGroupMetadata,
+					nuxilcp: options.nuxilcp,
 					additionalAttributes,
 					statusJidList: options.statusJidList,
 					additionalNodes
