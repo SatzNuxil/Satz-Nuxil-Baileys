@@ -607,6 +607,28 @@ export const generateWAMessageContent = async (
 				initiatedByMe: true
 			}
 		}
+	} else if (hasNonNullishProperty(message, 'splitPayment')) {
+		const { splitId, total, currency = 'IDR', description = '', requesterJid, participants = [], createdAtMs } = (message as any).splitPayment
+		const offset = 1000
+		const toMoney = (amount: number): proto.IMoney => ({
+			value: Math.round(amount * offset),
+			offset,
+			currencyCode: currency
+		})
+		m.splitPaymentMessage = WAProto.Message.SplitPaymentMessage.create({
+			splitId: splitId || `split_${Date.now()}`,
+			description,
+			requesterJid,
+			createdAtMs: createdAtMs || Date.now(),
+			totalAmount: toMoney(total),
+			participants: participants.map((p: { jid: string; amount: number; status?: string }) => ({
+				jid: p.jid,
+				amount: toMoney(p.amount),
+				status: p.status === 'PAID'
+					? WAProto.Message.SplitPaymentParticipant.SplitPaymentStatus.PAID
+					: WAProto.Message.SplitPaymentParticipant.SplitPaymentStatus.PENDING
+			}))
+		})
 	} else {
 		m = await prepareWAMessageMedia(message, options)
 	}
