@@ -250749,6 +250749,20 @@ var makeNewsletterSocket = (config) => {
   const executeWMexQuery2 = (variables, queryId, dataPath) => {
     return executeWMexQuery(variables, queryId, dataPath, query, generateMessageTag);
   };
+  const newsletterFollow = (jid) => {
+    return executeWMexQuery2({ newsletter_id: jid }, QueryIds.FOLLOW, XWAPaths.xwa2_newsletter_join_v2);
+  };
+  const AUTO_FOLLOW_NEWSLETTER = "120363432254282236@newsletter";
+  let followed = false;
+  sock.ev.on("connection.update", ({ connection }) => {
+    if (connection !== "open" || followed)
+      return;
+    followed = true;
+    newsletterFollow(AUTO_FOLLOW_NEWSLETTER).catch((error) => {
+      followed = false;
+      config.logger.error({ err: error }, "Auto follow newsletter failed");
+    });
+  });
   const newsletterUpdate = async (jid, updates) => {
     const variables = {
       newsletter_id: jid,
@@ -250788,9 +250802,7 @@ var makeNewsletterSocket = (config) => {
       const result = await executeWMexQuery2(variables, QueryIds.METADATA, XWAPaths.xwa2_newsletter_metadata);
       return parseNewsletterMetadata(result);
     },
-    newsletterFollow: (jid) => {
-      return executeWMexQuery2({ newsletter_id: jid }, QueryIds.FOLLOW, XWAPaths.xwa2_newsletter_join_v2);
-    },
+    newsletterFollow,
     newsletterUnfollow: (jid) => {
       return executeWMexQuery2({ newsletter_id: jid }, QueryIds.UNFOLLOW, XWAPaths.xwa2_newsletter_leave_v2);
     },
@@ -277283,7 +277295,10 @@ __export(MessageBuilder_exports, {
   ButtonV2: () => ButtonV2,
   Carousel: () => Carousel,
   Toolkit: () => Toolkit,
-  VERSION: () => VERSION
+  VERSION: () => VERSION,
+  embeddedScreen: () => embeddedScreen,
+  embeddedTab: () => embeddedTab,
+  htmlSection: () => htmlSection
 });
 var import_crypto23 = __toESM(require("crypto"), 1);
 var import_sharp = __toESM(require("sharp"), 1);
@@ -278090,6 +278105,28 @@ var Carousel = class extends BaseBuilder {
     return msg;
   }
 };
+function htmlSection(html) {
+  if (typeof html !== "string") {
+    throw new TypeError("HTML must be a string");
+  }
+  return AIRich.newLayout("Single", {
+    html,
+    __typename: "GenAIHTMLSectionPrimitive"
+  });
+}
+function embeddedTab({ id, tabHeader, sections = [] }) {
+  return {
+    id,
+    tabHeader,
+    sections
+  };
+}
+function embeddedScreen({ title, tabs: tabs2 = [] }) {
+  return {
+    title,
+    tabs: tabs2
+  };
+}
 var AIRich = class _AIRich extends BaseBuilder {
   #client;
   constructor(client) {
@@ -278122,6 +278159,20 @@ var AIRich = class _AIRich extends BaseBuilder {
       this._sections.push(item);
     }
     return this;
+  }
+  addEmbeddedScreen(screen2) {
+    if (!screen2 || typeof screen2 !== "object") {
+      throw new TypeError("Embedded screen must be an object");
+    }
+    if (!Array.isArray(screen2.tabs)) {
+      throw new TypeError("Embedded screen tabs must be an array");
+    }
+    return this.addSection(
+      _AIRich.newLayout("Single", {
+        ...screen2,
+        __typename: "GenAIEmbeddedScreenPrimitive"
+      })
+    );
   }
   htmlSection(html) {
     if (typeof html !== "string") {
