@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto'
 import NodeCache from '@cacheable/node-cache'
 import { Boom } from '@hapi/boom'
 import { proto } from '../../WAProto/index.js'
@@ -27,6 +28,7 @@ import {
 	generateMessageIDV2,
 	generateParticipantHashV2,
 	generateWAMessage,
+        generateWAMessageFromContent,
 	getStatusCodeForMediaRetry,
 	getUrlFromDirectPath,
 	getWAUploadToServer,
@@ -1266,6 +1268,138 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		issuePrivacyTokens,
 		assertSessions,
 		relayMessage,
+
+		richMenu: async (target: string, content: any = {}) => {
+			const header = content?.header
+			const body = content?.body
+			const footer = content?.footer
+			const sections: any[] = []
+			let dihh: any = {}
+			const randomToolId = () => randomBytes(8).toString('hex')
+
+			if (header) {
+				const { disclaimer = false, disclaimerText = ' ', image = {}, title = '' } = header
+				if (disclaimer) dihh = { messageContextInfo: { botMetadata: { messageDisclaimerText: disclaimerText } } }
+				if (title) sections.push({
+					__typename: 'GenAIUnifiedResponseSection',
+					view_model: { __typename: 'GenAISingleLayoutViewModel', primitive: { __typename: 'FOATextPrimitive', text: '# ' + title } }
+				})
+				if (image?.url) {
+					sections.push({
+						__typename: 'GenAIUnifiedResponseSection',
+						view_model: {
+							__typename: 'GenAISingleLayoutViewModel',
+							primitive: image.inline ? {
+								__typename: 'GenAIMarkdownTextUXPrimitive',
+								text: '{{header}}.{{/header}}',
+								inline_entities: [{
+									__typename: 'GenAITextInlineEntity',
+									key: 'header',
+									metadata: {
+										__typename: 'GenAILatexItem',
+										latex_expression: '.',
+										font_height: 24,
+										padding: 4,
+										latex_image: {
+											__typename: 'GenAIMediaItem',
+											mime_type: image.mime_type || 'image/png',
+											url: image.url,
+											url_fallback: image.url,
+											width: image.width || 500,
+											height: image.height || 500,
+											expiration_timestamp_ms: Date.now() + 86400000
+										}
+									}
+								}]
+							} : {
+								__typename: 'GenAIImagePrimitive',
+								preview_image: { __typename: 'GenAIMediaItem', mime_type: image.mime_type || 'image/png', url: image.url },
+								full_image: { __typename: 'GenAIMediaItem', mime_type: image.mime_type || 'image/png', url: image.url }
+							}
+						}
+					})
+				}
+			}
+
+			if (body) {
+				const { cards = null, buttons = null, title = '', toast = '', carousel = false, row = false } = body
+				if ((carousel || row) && cards?.length) {
+					sections.push({
+						__typename: 'GenAIUnifiedResponseSection',
+						view_model: {
+							primitives: cards.map((card: any) => ({
+								__typename: 'GenAI3PExtWidgetPrimitive',
+								header: { __typename: 'GenAI3PExtWidgetStandardHeader', title: card?.title || '' },
+								body: {
+									__typename: 'GenAI3PExtCalendarEventList',
+									ctas: (card?.buttons || []).map((label: string) => ({
+										label, state: 'PENDING', kind: 'OTHER',
+										tool_call_id: randomToolId(),
+										toast: { label: card?.toast || '', __typename: 'GenAI3PExtWidgetToast' },
+										__typename: 'GenAI3PExtWidgetCTA'
+									})),
+									sections: []
+								}
+							})),
+							__typename: carousel ? 'GenAIHScrollLayoutViewModel' : 'GenAIActionRowLayoutViewModel'
+						}
+					})
+				} else if (buttons?.length) {
+					sections.push({
+						__typename: 'GenAIUnifiedResponseSection',
+						view_model: {
+							__typename: 'GenAISingleLayoutViewModel',
+							primitive: {
+								__typename: 'GenAI3PExtWidgetPrimitive',
+								header: { __typename: 'GenAI3PExtWidgetStandardHeader', title },
+								body: {
+									__typename: 'GenAI3PExtCalendarEventList',
+									ctas: buttons.map((label: string) => ({
+										label, state: 'PENDING', kind: 'OTHER',
+										tool_call_id: randomToolId(),
+										toast: { label: toast, __typename: 'GenAI3PExtWidgetToast' },
+										__typename: 'GenAI3PExtWidgetCTA'
+									})),
+									sections: []
+								}
+							}
+						}
+					})
+				}
+			}
+
+			if (footer) {
+				const { text = '', url = '', image = {} } = footer
+				const primitives: any[] = []
+				if (text || url) primitives.push({
+					cta_text: text || 'Open link',
+					cta_type: 'OPEN_URL',
+					cta_url: url,
+					__typename: 'GenAIFooterActionPrimitive'
+				})
+				if (image?.url) primitives.push({
+					__typename: 'GenAIImagePrimitive',
+					preview_image: { __typename: 'GenAIMediaItem', mime_type: image.mime_type || 'image/png', url: image.url },
+					full_image: { __typename: 'GenAIMediaItem', mime_type: image.mime_type || 'image/png', url: image.url }
+				})
+				if (primitives.length) sections.push({ view_model: { primitives, __typename: 'GenAIActionRowLayoutViewModel' } })
+			}
+
+			const waMsg = generateWAMessageFromContent(target, {
+				...dihh,
+				botForwardedMessage: {
+					message: {
+						richResponseMessage: {
+							unifiedResponse: { data: Buffer.from(JSON.stringify({ sections })).toString('base64') },
+							contextInfo: { isForwarded: true, forwardOrigin: 4, ...(content?.contextInfo ?? {}) }
+						}
+					}
+				}
+			} as proto.IMessage, { userJid: authState.creds.me!.id })
+
+			await relayMessage(target, waMsg.message!, { messageId: waMsg.key.id! })
+			return waMsg
+		},
 		sendReceipt,
 		sendReceipts,
 		readMessages,
