@@ -607,6 +607,10 @@ export const generateWAMessageContent = async (
 				initiatedByMe: true
 			}
 		}
+	} else if (hasNonNullishProperty(message, 'requestLocation')) {
+		m.requestLocationMessage = WAProto.Message.RequestLocationMessage.create(
+			message.requestLocation?.contextInfo ? { contextInfo: message.requestLocation.contextInfo } : {}
+		)
 	} else if (hasNonNullishProperty(message, 'splitPayment')) {
 		const { splitId, total, currency = 'IDR', description = '', requesterJid, participants = [], createdAtMs } = (message as any).splitPayment
 		const offset = 1000

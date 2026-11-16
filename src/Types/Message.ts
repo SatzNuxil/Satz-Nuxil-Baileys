@@ -281,6 +281,7 @@ export type AnyRegularMessageContent = (
 			body?: string
 			footer?: string
 	  }
+	| { requestLocation: { contextInfo?: proto.IContextInfo } }
 	| SharePhoneNumber
 	| RequestPhoneNumber
 ) &

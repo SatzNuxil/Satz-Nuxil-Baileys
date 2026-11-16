@@ -30646,6 +30646,9 @@ export namespace proto {
         /** Message paymentReminderMessage */
         paymentReminderMessage?: (proto.Message.IPaymentReminderMessage|null);
 
+        /** Message requestLocationMessage */
+        requestLocationMessage?: (proto.Message.IRequestLocationMessage|null);
+
         /** Message splitPaymentMessage */
         splitPaymentMessage?: (proto.Message.ISplitPaymentMessage|null);
 
@@ -30976,6 +30979,9 @@ export namespace proto {
 
         /** Message paymentReminderMessage. */
         public paymentReminderMessage?: (proto.Message.IPaymentReminderMessage|null);
+
+        /** Message requestLocationMessage. */
+        public requestLocationMessage?: (proto.Message.IRequestLocationMessage|null);
 
         /** Message splitPaymentMessage. */
         public splitPaymentMessage?: (proto.Message.ISplitPaymentMessage|null);
@@ -49423,6 +49429,24 @@ export namespace proto {
              * @returns The default type url
              */
             public static getTypeUrl(typeUrlPrefix?: string): string;
+        }
+
+        /** Properties of a RequestLocationMessage. */
+        interface IRequestLocationMessage {
+            /** RequestLocationMessage contextInfo */
+            contextInfo?: (proto.IContextInfo|null);
+        }
+
+        /** Represents a RequestLocationMessage. */
+        class RequestLocationMessage implements IRequestLocationMessage {
+            constructor(p?: proto.Message.IRequestLocationMessage);
+            public contextInfo?: (proto.IContextInfo|null);
+            public static create(properties?: proto.Message.IRequestLocationMessage): proto.Message.RequestLocationMessage;
+            public static encode(m: proto.Message.IRequestLocationMessage, w?: $protobuf.Writer): $protobuf.Writer;
+            public static decode(r: ($protobuf.Reader|Uint8Array), l?: number): proto.Message.RequestLocationMessage;
+            public static fromObject(d: { [k: string]: any }): proto.Message.RequestLocationMessage;
+            public static toObject(m: proto.Message.RequestLocationMessage, o?: $protobuf.IConversionOptions): { [k: string]: any };
+            public toJSON(): { [k: string]: any };
         }
 
         /** Properties of a SplitPaymentMessage. */
