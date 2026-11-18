@@ -1132,6 +1132,108 @@ textSection(text) {
 		return this;
 	}
 
+   addMap(map = {}) {
+       if (!map || typeof map !== 'object' || Array.isArray(map)) {
+           throw new TypeError('Map must be an object');
+       }
+
+       const validCoord = (v, min, max) =>
+           typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max;
+
+       if (!validCoord(map.latitude, -90, 90) ||
+           !validCoord(map.longitude, -180, 180)) {
+           throw new TypeError('Invalid map coordinates');
+       }
+
+       const latitudeDelta = map.latitudeDelta ?? 0.01;
+       const longitudeDelta = map.longitudeDelta ?? 0.01;
+
+       if (!validCoord(latitudeDelta, 0.000001, 180) ||
+           !validCoord(longitudeDelta, 0.000001, 360)) {
+           throw new TypeError('Invalid map delta');
+       }
+
+       const annotations = map.annotations ?? [];
+       if (!Array.isArray(annotations) || annotations.length > 25) {
+           throw new TypeError('Annotations must contain at most 25 items');
+       }
+
+       const parsedAnnotations = annotations.map((item, i) => {
+           if (!item || typeof item !== 'object' || Array.isArray(item) ||
+               !validCoord(item.latitude, -90, 90) ||
+               !validCoord(item.longitude, -180, 180)) {
+               throw new TypeError(`Invalid annotation at index ${i}`);
+           }
+
+           for (const key of ['title', 'body']) {
+               if (item[key] !== undefined &&
+                   (typeof item[key] !== 'string' || item[key].length > 500)) {
+                   throw new TypeError(`Invalid annotation ${key}`);
+               }
+           }
+
+           return {
+               annotationNumber: item.annotationNumber ?? i + 1,
+               latitude: item.latitude,
+               longitude: item.longitude,
+               title: item.title || '',
+               body: item.body || ''
+           };
+       });
+
+       this._submessages.push({
+           messageType: 7,
+           mapMetadata: {
+               centerLatitude: map.latitude,
+               centerLongitude: map.longitude,
+               latitudeDelta,
+               longitudeDelta,
+               showInfoList: map.showInfoList,
+               annotations: parsedAnnotations
+           }
+       });
+
+       return this;
+   }
+
+   addLatex(text, expressions = []) {
+       if (typeof text !== 'string' || text.length > 4000) {
+           throw new TypeError('Latex text must be a string (max 4000 characters)');
+       }
+
+       if (!Array.isArray(expressions) || expressions.length > 20) {
+           throw new TypeError('Expressions must contain at most 20 items');
+       }
+
+       const parsedExpressions = expressions.map((item, i) => {
+           if (typeof item === 'string') {
+               if (item.length > 1000) {
+                   throw new TypeError(`Latex expression ${i} is too long`);
+               }
+               return { latexExpression: item };
+           }
+
+           if (!item || typeof item !== 'object' ||
+               typeof item.latexExpression !== 'string' ||
+               item.latexExpression.length > 1000) {
+               throw new TypeError(`Invalid latex expression at index ${i}`);
+           }
+
+           return item;
+       });
+
+       this._submessages.push({
+           messageType: 8,
+           latexMetadata: {
+               text,
+               expressions: parsedExpressions
+           }
+       });
+
+       return this;
+   }
+
+
 	addCode(language, code) {
 		if (typeof language !== 'string' || typeof code !== 'string') {
 			throw new TypeError('Language and code must be a string');
